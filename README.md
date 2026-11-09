@@ -1,36 +1,35 @@
-# High Performance Image Processing Pipeline (HPC) 🚀
+# High Performance Image Processing Pipeline (HPC)
 
-Bu proje, büyük boyutlu görüntülerin (4K ve üzeri) işlenmesi sırasında **Serial (Seri)**, **OpenMP (Paylaşımlı Bellek)** ve **MPI (Dağıtık Bellek)** yöntemlerinin performanslarını karşılaştıran bir C++ uygulamasıdır.
+A high-performance C++ application designed to benchmark and evaluate the performance, scalability, and execution behavior across **Serial (Single-Core Baseline)**, **OpenMP (Shared Memory Multi-Threading)**, and **MPI (Distributed Memory Multi-Processing)** paradigms on large-scale image data.
 
-Proje kapsamında Sobel Kenar Tespiti (Sobel Edge Detection) algoritması kullanılarak 3 aşamalı bir görüntü işleme hattı (pipeline) kurulmuştur.
+The pipeline performs a 3-stage image processing sequence using Sobel Edge Detection:
+1. **Preprocess:** Color (BGR) to single-channel Grayscale conversion using the weighted formula ($0.299 \times R + 0.587 \times G + 0.114 \times B$)[cite: 4, 6].
+2. **Process:** 2D spatial convolution computing gradient magnitude ($\sqrt{G_x^2 + G_y^2}$) with $3 \times 3$ horizontal ($G_x$) and vertical ($G_y$) Sobel operator kernels[cite: 4, 6, 8].
+3. **Postprocess:** Global binary thresholding to segment edges into a binary (black/white) representation[cite: 4, 6, 8].
 
-## 🛠️ Kullanılan Teknolojiler
-* **Dil:** C++17
-* **Kütüphaneler:** OpenCV (Görüntü İşleme), OpenMP, MS-MPI
-* **Derleme:** CMake & MinGW64
+---
 
-## 📂 Proje Yapısı
-* `serial/`: Tek çekirdekli referans implementasyon.
-* `openmp/`: Multi-threading (OpenMP) implementasyonu.
-* `mpi/`: Multi-processing (MPI) implementasyonu (Domain Decomposition).
+## 🛠️ Tech Stack & Requirements
 
-## 🚀 Kurulum ve Derleme
+- **Language:** C++17[cite: 1, 3]
+- **Core Dependencies:** OpenCV 4.x (Image I/O, Matrix handling), OpenMP, MPI (MS-MPI / OpenMPI / MPICH)[cite: 1, 3]
+- **Build System:** CMake ($\ge 3.10$) with GCC, Clang, or MinGW64[cite: 1, 3]
 
-Bu projeyi çalıştırmak için bilgisayarınızda OpenCV ve MS-MPI yüklü olmalıdır.
+---
 
-# Build klasörü oluşturun
-mkdir build
-cd build
+## 📂 Project Architecture
 
-# CMake ile derleyin
-cmake ..
-cmake --build .
-
-1. Serial (Referans):
-.\serial\serial_app.exe
-
-2. OpenMP :
-.\openmp\openmp_app.exe
-
-3. MPI :
-mpiexec -n [kullanmak istediğiniz işlemci sayısı] .\mpi\mpi_app.exe
+```text
+parallel_image_processing_pipeline/
+├── mpi/
+│   ├── CMakeLists.txt     # Target configuration for MPI executable
+│   └── main.cpp           # Domain Decomposition via 1D row slicing (Scatterv / Gatherv)
+├── openmp/
+│   ├── CMakeLists.txt     # Target configuration with OpenMP flags
+│   └── main.cpp           # Shared memory multi-threading (collapse, scheduling, reduction)
+├── serial/
+│   ├── CMakeLists.txt     # Target configuration for serial baseline
+│   └── main.cpp           # Single-threaded reference implementation
+├── CMakeLists.txt         # Root build configuration
+├── input.jpg              # High-resolution benchmark input image
+└── README.md
