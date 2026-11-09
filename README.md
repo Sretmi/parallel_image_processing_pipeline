@@ -1,4 +1,3 @@
-```markdown
 # High Performance Image Processing Pipeline (HPC)[cite: 1]
 
 A high-performance C++ application designed to benchmark and evaluate the performance, scalability, and execution behavior across **Serial (Single-Core Baseline)**, **OpenMP (Shared Memory Multi-Threading)**, and **MPI (Distributed Memory Multi-Processing)** paradigms on large-scale image data[cite: 1].
@@ -34,51 +33,19 @@ parallel_image_processing_pipeline/
 ├── CMakeLists.txt         # Root build configuration
 ├── input.jpg              # High-resolution benchmark input image
 └── README.md
-
 ```
-
-
+[cite: 1, 3, 5, 7, 9, 10]
 
 ---
 
 ## ⚙️ Implementation Details
 
-| Stage | Serial (Baseline)
-
- | OpenMP (Shared Memory)
-
- | MPI (Distributed Memory)
-
- |
-| --- | --- | --- | --- |
-| **1. Preprocess (Grayscale)** | Nested loops calculating weighted luminosity per pixel.
-
- | `#pragma omp parallel for collapse(2) schedule(static)` — uniform chunk distribution across threads.
-
- | Rank 0 loads the image and converts BGR to 1D grayscale buffer. Dimensions are broadcast via `MPI_Bcast`.
-
- |
-| **2. Process (Sobel 3x3)** | Sequential $3 \times 3$ kernel convolution clamped to $[0, 255]$.
-
- | `#pragma omp parallel for collapse(2) schedule(dynamic)` — dynamic scheduling to mitigate load imbalance during memory access.
-
- | Domain decomposition using `MPI_Scatterv`. Each process computes convolution on local row segments.
-
- |
-| **3. Postprocess (Threshold)** | Sequential binary classification based on threshold value.
-
- | `#pragma omp parallel for collapse(2) reduction(+:whitePixelCount)` — race-condition free reduction.
-
- | Independent in-place thresholding on local process buffers.
-
- |
-| **Data Aggregation & Metrics** | Direct file output (`cv::imwrite`).
-
- | Direct file output (`cv::imwrite`).
-
- | Processed chunks gathered into Rank 0 using `MPI_Gatherv`. `MPI_Reduce(..., MPI_MAX)` measures the slowest process calculation time.
-
- |
+| Stage | Serial (Baseline)[cite: 1] | OpenMP (Shared Memory)[cite: 1] | MPI (Distributed Memory)[cite: 1] |
+| :--- | :--- | :--- | :--- |
+| **1. Preprocess (Grayscale)** | Nested loops calculating weighted luminosity per pixel[cite: 4]. | `#pragma omp parallel for collapse(2) schedule(static)`[cite: 6] — uniform chunk distribution across threads[cite: 6]. | Rank 0 loads the image and converts BGR to 1D grayscale buffer[cite: 8]. Dimensions are broadcast via `MPI_Bcast`[cite: 8]. |
+| **2. Process (Sobel 3x3)** | Sequential $3 \times 3$ kernel convolution clamped to $[0, 255]$[cite: 4]. | `#pragma omp parallel for collapse(2) schedule(dynamic)`[cite: 6] — dynamic scheduling to mitigate load imbalance during memory access[cite: 6]. | Domain decomposition using `MPI_Scatterv`[cite: 8]. Each process computes convolution on local row segments[cite: 8]. |
+| **3. Postprocess (Threshold)** | Sequential binary classification based on threshold value[cite: 4]. | `#pragma omp parallel for collapse(2) reduction(+:whitePixelCount)`[cite: 6] — race-condition free reduction[cite: 6]. | Independent in-place thresholding on local process buffers[cite: 8]. |
+| **Data Aggregation & Metrics** | Direct file output (`cv::imwrite`)[cite: 4]. | Direct file output (`cv::imwrite`)[cite: 6]. | Processed chunks gathered into Rank 0 using `MPI_Gatherv`[cite: 8]. `MPI_Reduce(..., MPI_MAX)` measures the slowest process calculation time[cite: 8]. |
 
 ---
 
@@ -86,7 +53,7 @@ parallel_image_processing_pipeline/
 
 ### 1. Build the Project
 
-Ensure OpenCV and your MPI distribution are configured in your system environment. From the root directory:
+Ensure OpenCV and your MPI distribution are configured in your system environment[cite: 1]. From the root directory:
 
 ```bash
 # Create and navigate to the build directory
@@ -96,42 +63,33 @@ cd build
 # Generate build files and compile all targets
 cmake ..
 cmake --build .
-
 ```
-
-
+[cite: 1]
 
 *If building with MinGW on Windows:*
-
 ```bash
 cmake -G "MinGW Makefiles" ..
 mingw32-make
-
 ```
 
 ---
 
 ### 2. Running the Binaries
 
-Execute the binaries directly from the `build/` directory so relative paths resolve to the root input image:
+Execute the binaries directly from the `build/` directory so relative paths resolve to the root input image[cite: 4, 6, 8]:
 
 #### Serial Baseline:
-
 ```bash
 # Linux / macOS:
 ./serial/serial_app
 
 # Windows:
 .\serial\serial_app.exe
-
 ```
-
-
+[cite: 1]
 
 #### OpenMP (Multi-Threaded):
-
-By default, the application utilizes all available logical processor cores. To set a specific thread count:
-
+By default, the application utilizes all available logical processor cores[cite: 6]. To set a specific thread count:
 ```bash
 # Linux / macOS:
 export OMP_NUM_THREADS=8
@@ -140,45 +98,26 @@ export OMP_NUM_THREADS=8
 # Windows (PowerShell):
 $env:OMP_NUM_THREADS="8"
 .\openmp\openmp_app.exe
-
 ```
-
-
+[cite: 1]
 
 #### MPI (Multi-Process):
-
-Run using your MPI process manager, specifying the desired process count (`-n`):
-
+Run using your MPI process manager, specifying the desired process count (`-n`)[cite: 1]:
 ```bash
 # Linux (OpenMPI / MPICH):
 mpirun -n 4 ./mpi/mpi_app
 
 # Windows (MS-MPI):
 mpiexec -n 4 .\mpi\mpi_app.exe
-
 ```
-
-
+[cite: 1]
 
 ---
 
 ## 📊 Performance Metrics & Output
 
-Each executable benchmarks and logs execution times in milliseconds (`ms`):
-
-* **Preprocess Time:** Wall-clock time taken to read and convert raw color channels to grayscale.
-
-
-* **Process Time:** Core convolution computation duration. For MPI, this represents the critical path via `MPI_Reduce(MPI_MAX)`.
-
-
-* **Postprocess Time:** Time taken to apply the binary threshold filter.
-
-
-* **Communication Overhead (MPI):** The latency and bandwidth cost incurred during scatter (`MPI_Scatterv`), barrier synchronization (`MPI_Barrier`), and gathering operations (`MPI_Gatherv`).
-
-
-
-```
-
-```
+Each executable benchmarks and logs execution times in milliseconds (`ms`)[cite: 4, 6, 8]:
+- **Preprocess Time:** Wall-clock time taken to read and convert raw color channels to grayscale[cite: 6, 8].
+- **Process Time:** Core convolution computation duration[cite: 6, 8]. For MPI, this represents the critical path via `MPI_Reduce(MPI_MAX)`[cite: 8].
+- **Postprocess Time:** Time taken to apply the binary threshold filter[cite: 6, 8].
+- **Communication Overhead (MPI):** The latency and bandwidth cost incurred during scatter (`MPI_Scatterv`), barrier synchronization (`MPI_Barrier`), and gathering operations (`MPI_Gatherv`)[cite: 8].
